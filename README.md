@@ -1,283 +1,299 @@
-# Neutron Star Simulator
+# ⭐ Neutron Star Simulator
 
-A scientifically-inspired, interactive neutron star simulator that runs in real time and visualizes gravity, rotation, particles, accretion disks, and relativistic effects.
+![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus&logoColor=white)
+![OpenGL 4.6](https://img.shields.io/badge/OpenGL-4.6%20Core-5586A4?logo=opengl&logoColor=white)
+![CMake](https://img.shields.io/badge/CMake-3.20%2B-064F8C?logo=cmake&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-## What It Does
+A **real-time, interactive neutron star simulator** built with C++20, OpenGL 4.6 and Dear ImGui. Explore gravity, rotation, particle dynamics, an accretion disk and relativistic effects — with a Tolman–Oppenheimer–Volkoff (TOV) stellar-structure solver under the hood.
 
-This project simulates a neutron star with interactive visualizations including:
-- **Gravity**: Newtonian gravitational acceleration and potential
-- **Relativistic effects**: Gravitational time dilation and redshift (Schwarzschild approximations)
-- **Particle dynamics**: Orbiting particles with multiple integration methods (Euler, Verlet, RK4)
-- **Accretion disk**: Particle-based disk with orbital motion and inward drift
-- **Rotation**: Visualizable rotation axis with velocity warnings
-- **TOV solver**: Tolman-Oppenheimer-Volkoff numerical integration for mass-radius curves
-- **Photon visualization**: Optional light ray paths with Newtonian vs relativistic comparison
+![Neutron Star Simulator — orbit view with live control panels](docs/screenshots/main_view.png)
 
-## Physics Included
+---
 
-### Physical Constants (SI units)
-- Gravitational constant: G = 6.67430e-11 m³ kg⁻¹ s⁻²
-- Speed of light: c = 299,792,458 m/s
-- Solar mass: M_☉ = 1.98847e30 kg
-- Default neutron star: 1.4 M_☉, 12 km radius
+## 📖 Table of Contents
 
-### Implemented Physics
-- Newtonian gravity: g(r) = GM/r², Φ(r) = -GM/r
-- Escape velocity: v_esc = sqrt(2GM/r)
-- Schwarzschild radius: r_s = 2GM/c²
-- Compactness: C = 2GM/(Rc²)
-- Gravitational time dilation: dτ/dt = sqrt(1 - 2GM/(rc²))
-- Gravitational redshift: z = 1/sqrt(1 - 2GM/(rc²)) - 1
-- Rotational velocity: v = ωr
-- Polytropic equation of state: P = Kρ^γ
-- TOV solver: Numerical integration of relativistic stellar structure
+- [Highlights](#-highlights)
+- [Screenshots](#-screenshots)
+- [Recent Upgrades](#-recent-upgrades-in-this-build)
+- [Interactive Controls](#-interactive-controls)
+- [GUI Panels](#%EF%B8%8F-gui-panels)
+- [Physics Model](#-physics-model)
+- [Rendering Pipeline](#-rendering-pipeline)
+- [Getting Started](#-getting-started)
+- [Project Structure](#-project-structure)
+- [Testing](#-testing)
+- [Troubleshooting](#%EF%B8%8F-troubleshooting)
+- [Roadmap](#-roadmap)
+- [Scientific Disclaimer](#%EF%B8%8F-scientific-disclaimer--limitations)
+- [References](#-references)
+- [License](#-license)
 
-### Optional Features
-- Particle integration: Euler, Verlet, or RK4 methods
-- Sub-stepping for numerical stability
-- Accretion disk with viscosity-driven inward drift
-- Mass-radius curve generation
-- Maximum mass detection for given EOS
+## ✨ Highlights
 
-## Limitations
+- 🌟 **Real-time neutron star** — 48×24 segment sphere with per-fragment diffuse lighting and limb brightening
+- 🌀 **Particle-based accretion disk** — 5,000 disk particles (from a 20,000-particle pool) initialized on circular orbits with a temperature gradient and viscous inward drift
+- 🧮 **Three integrators** — Euler, Velocity Verlet (default) and RK4, with sub-stepping, velocity capping (½ c) and automatic numerical-instability detection
+- ⚖️ **TOV solver** — numerically integrates relativistic stellar structure for a polytropic equation of state; mass–radius curves and maximum-mass detection
+- 🧊 **HDR rendering** — scene rendered to an `RGBA16F` offscreen framebuffer, then presented with a bilinear blit
+- 🖥️ **Dear ImGui control room** — seven live panels driving every simulation parameter in real time
+- ✅ **Unit-tested physics core** — gravity, relativity and TOV suites (`ctest`, 3/3 passing)
 
-**This is an educational simulation, not a full astrophysics model.**
+## 📸 Screenshots
 
-- Newtonian particle dynamics are approximations, not full general-relativistic simulations
-- TOV model depends heavily on the equation of state
-- Real neutron stars require complicated nuclear physics, general relativity, magnetic fields, rotation, neutrino physics, and potentially relativistic magnetohydrodynamics
-- Accretion disk is a simplified viscosity approximation, not a full MHD simulation
-- Relativistic effects use Schwarzschild/static-field approximations only
+| Orbit view (default) | Zoomed in on the star & inner disk |
+|---|---|
+| ![Orbit view with live control panels](docs/screenshots/main_view.png) | ![Zoomed view of the star and accretion disk](docs/screenshots/disk_closeup.png) |
 
-**Compactness check**: The simulator clearly shows that a normal neutron star's radius is larger than its Schwarzschild radius (it does not incorrectly treat the star as a black hole).
+*Captured directly from the running application (Windows, OpenGL 4.6).*
 
-## Requirements
+## 🆕 Recent Upgrades in This Build
 
-- CMake 3.20 or later
-- C++20 compatible compiler (MSVC or MinGW-w64)
-- OpenGL 4.6 support
-- [Dependencies via CMake FetchContent]:
-  - GLFW (window and input)
-  - GLAD (OpenGL loading)
-  - GLM (mathematics)
-  - Dear ImGUI (GUI)
-  - ImPlot (plotting)
-  - spdlog (logging)
-  - stb_image (image loading)
-  - Catch2 (unit testing, optional)
+| Fix / Upgrade | Details |
+|---|---|
+| 🐛 **Black scene fixed** | The sphere and disk meshes generated triangles with **inverted winding** while the renderer enabled back-face culling — the entire scene silently failed to draw. Vertex winding was corrected in `Mesh::createSphere` / `Mesh::createDisk`. |
+| 🐛 **Disk shader fixed** | The annulus fragment shader multiplied its color by an inverted center-fade term that evaluated to zero everywhere, outputting black. It now renders a bright inner edge with a smooth fade toward the outer rim. |
+| 🖼️ **UI layout fixed** | Panels no longer spawn stacked on top of each other — every panel gets a sensible first-launch position and size (`ImGuiCond_FirstUseEver`), and the Scientific Disclaimer window can no longer collapse into a one-character-wide column. |
+| 🖱️ **Camera / UI conflict fixed** | Camera orbit, pan and zoom are now suppressed while the cursor is over ImGui widgets (`WantCaptureMouse`), so dragging sliders no longer spins the camera. |
+| 🧹 **Repository hygiene** | Stale tracked `imgui.ini` removed and gitignored; shader asset lookup hardened (working directory *and* executable directory); `file(COPY)` fixed to produce `<build>/assets/shaders/...`. |
 
-## Building
+## 🎮 Interactive Controls
 
-### Windows (MSVC)
+### Mouse
 
-```cmd
-mkdir build
-cd build
-cmake -G "Visual Studio 17 2022" ..
-cmake --build . --config Release
+| Input | Action |
+|---|---|
+| **Left-drag** | Orbit the camera around the star |
+| **Middle-drag** | Pan the view target |
+| **Scroll wheel** | Zoom (orbit radius clamped to 10–1000 world units) |
+| *Over UI panels* | Camera input is automatically suppressed — safe to drag sliders and checkboxes |
+
+### Keyboard
+
+| Key | Action |
+|---|---|
+| `Space` | Pause / resume the simulation |
+| `R` | Reset the camera to the default orbit |
+| `M` | Toggle between orbit camera and free-fly camera |
+| `W` `A` `S` `D` | Free-fly movement (forward / left / back / right) |
+| `Q` / `E` | Free-fly down / up |
+| `Esc` | Quit the simulator |
+
+> **World scale:** 1 world unit = 1 km. The star (radius 12 km) sits at the origin; the camera starts on a 150 km orbit with a 60° field of view.
+
+## 🖥️ GUI Panels
+
+All panels are movable, resizable, collapsible and closable. Your layout is saved to `imgui.ini` (autosaved every few seconds and on exit) and restored on the next launch — delete the file to reset to the default layout.
+
+| Panel | What it does |
+|---|---|
+| **Scientific Disclaimer** | Educational-use notice shown at startup (close it to dismiss for the session). |
+| **Simulation** | `Paused` toggle, `Time Scale` (0.1×–10×), physics `Timestep` (1–50 ms), `Sub-Steps` (1–20) for integration stability. |
+| **Physics** | Toggle Newtonian gravity, relativistic effects, photon rays (see [Roadmap](#-roadmap) for visualization status) and the accretion disk. |
+| **Neutron Star** | Live mass and radius readout — defaults: **1.4 M☉** (2.78×10³⁰ kg), **12 km**. |
+| **TOV** | Simulation clock and the numerical-instability flag raised if the particle state ever becomes non-finite. |
+| **Visualization** | Accretion disk on/off, disk particle count (100–20,000; applied when the disk spawns at startup), disk inner/outer radii — the rendered annulus reshapes **live** as you drag the sliders (default 20–100 km). |
+| **Statistics** | Particle pool size and total mechanical energy (kinetic + gravitational potential) of all active particles. |
+
+## 🔭 Physics Model
+
+**Physical constants (SI units)**
+
+| Constant | Value |
+|---|---|
+| Gravitational constant | `G  = 6.67430×10⁻¹¹ m³ kg⁻¹ s⁻²` |
+| Speed of light | `c  = 299 792 458 m/s` |
+| Solar mass | `M☉ = 1.98847×10³⁰ kg` |
+| Default star | `M = 1.4 M☉`, `R = 12 km` |
+
+**Implemented physics**
+
+| Phenomenon | Model |
+|---|---|
+| Newtonian gravity | `g(r) = GM/r²`,  `Φ(r) = −GM/r` |
+| Escape velocity | `v_esc = √(2GM/r)` |
+| Schwarzschild radius | `r_s = 2GM/c²` |
+| Compactness | `C = 2GM/(Rc²)` — the sim shows that a normal neutron star's radius stays safely outside `r_s` |
+| Gravitational time dilation | `dτ/dt = √(1 − 2GM/rc²)` |
+| Gravitational redshift | `z = 1/√(1 − 2GM/rc²) − 1` |
+| Rotational velocity | `v = ωr` |
+| Equation of state | Polytropic `P = Kρ^γ` |
+| Stellar structure | TOV equations integrated numerically (see `src/Physics/TOVSolver.cpp`) |
+
+**Particle dynamics**
+
+- Circular-orbit initialization for the disk: `v_orb = √(GM/r)` with a `T(r) = T₀√(r_in/r)` temperature gradient
+- Viscosity-driven inward drift approximates accretion
+- Particles falling inside the star are deactivated; velocities are capped at `0.5 c`
+- Non-finite states (NaN/Inf) are detected every frame and flagged in the **TOV** panel
+
+## 🎨 Rendering Pipeline
+
+```
+GLFW window (1600×900, GL 4.6 core, vsync)
+        │
+        ▼
+┌─────────────────────────────────────────────┐
+│  Offscreen HDR framebuffer (RGBA16F + D24S8)│
+│                                             │
+│   ★ Star mesh  (48×24 sphere, unit radius   │
+│      scaled by star radius in the model     │
+│      matrix; diffuse + limb brightening)    │
+│                                             │
+│   🌀 Disk mesh  (annulus in the XZ plane;   │
+│      camera-light diffuse, inner-edge       │
+│      boost, outer fade, annular mask)       │
+└─────────────────────────────────────────────┘
+        │  glBlitFramebuffer (linear)
+        ▼
+   Default framebuffer
+        │
+        ▼
+   Dear ImGui overlay (panels, sliders, plots)
 ```
 
-Or via command line:
+- OpenGL functions loaded with **GLAD** (vendored); math by **GLM**; logging by **spdlog**
+- Back-face culling and depth testing enabled — mesh windings are CCW-outward (see [Recent Upgrades](#-recent-upgrades-in-this-build))
+- Shaders are plain GLSL 460 files under `assets/shaders/`, located relative to the working directory or the executable
+
+## 🚀 Getting Started
+
+### Requirements
+
+- **CMake 3.20+** and a **C++20** compiler (MSVC 2022 or MinGW-w64 / GCC 13+ / Clang)
+- **OpenGL 4.6** capable GPU and current drivers
+- All libraries are fetched automatically by CMake `FetchContent` — no manual installs:
+  GLFW 3.4 · GLAD (vendored) · GLM 1.0.1 · Dear ImGui 1.91.5 · ImPlot 0.16 · spdlog 1.14.1 · stb_image · OpenMP (optional)
+
+### Build — Windows (MSVC)
 
 ```cmd
 cmake -S . -B build
 cmake --build build --config Release
 ```
 
-### Windows (MinGW-w64)
+### Build — Windows (MinGW-w64 / MSYS2 UCRT64)
 
-```cmd
-mkdir build
-cd build
-cmake -G "MinGW Makefiles" ..
-cmake --build . --config Release
+```powershell
+$env:Path = "C:\msys64\ucrt64\bin;$env:Path"   # if not already on PATH
+cmake -S . -B build -G "MinGW Makefiles"
+cmake --build build -j 8
 ```
 
-### Linux
-
-```bash
-mkdir build
-cd build
-cmake -S . -B build
-cmake --build build --config Release
-```
-
-Or using the project commands:
+### Build — Linux
 
 ```bash
 cmake -S . -B build
-cmake --build build --config Release
+cmake --build build -j$(nproc)
 ```
 
-## Running
+### Run
 
 ```bash
-# Windows (MSVC)
-.\NeutronStarSimulator.exe
-
-# Linux
-./NeutronStarSimulator
+./build/NeutronStarSimulator        # Linux
+build\NeutronStarSimulator.exe      # Windows
 ```
 
-## Controls
+Shader assets are copied to `<build>/assets/shaders` at configure time and found automatically whether you launch from the build directory or elsewhere.
 
-### Camera
-- **WASD**: Move camera (free mode) or forward/backward (orbit mode)
-- **Mouse**: Look/orbit around the neutron star
-- **Scroll**: Zoom in/out
-- **R**: Reset camera to default position
-- **Space**: Pause/resume simulation
+> 💡 First launch tips: `Space` pauses, `R` resets the camera, and the **Visualization** sliders reshape the accretion disk live.
 
-### Simulation
-- **P**: Pause/Resume simulation
-- **+/-**: Increase/decrease time scale
-- **Mouse right-drag**: Orbit camera
-- **Scroll**: Zoom
+### Build options
 
-### Physics Toggles
-- **G**: Toggle Newtonian gravity on/off
-- **R**: Toggle relativistic effects on/off
-- **D**: Toggle accretion disk on/off
-- **1/2/3**: Switch integration method (Euler/Verlet/RK4)
+| Option | Default | Description |
+|---|---|---|
+| `NSIM_USE_OPENMP` | `ON` | OpenMP parallelization for particle physics |
+| `NSIM_BUILD_TESTS` | `ON` | Build the unit-test executables |
 
-### Neutron Star Parameters
-- Adjust mass and radius via the UI panel
-- Control rotation rate and direction
-- Modify EOS parameters (K and gamma)
-
-### TOV Solver
-- **Solve**: Integrate TOV equations for current central density
-- **Generate M-R curve**: Run solver over density range
-- **EOS parameters**: Adjust K and gamma
-
-## Simulation Panels
-
-### SIMULATION
-- Pause/Resume
-- Reset
-- Time scale
-- Timestep
-- Integration method (Euler/Verlet/RK4)
-- Sub-stepping count
-
-### NEUTRON STAR
-- Mass (solar masses)
-- Radius (km)
-- Rotation rate (rad/s)
-- Inclination angle
-- Azimuth angle
-- Compactness
-- Schwarzschild radius
-- Escape velocity
-
-### PHYSICS
-- Newtonian gravity toggle
-- Relativistic effects toggle
-- Photon rays toggle
-- Accretion disk toggle
-
-### TOV
-- Central density
-- EOS parameters (K, gamma)
-- Solve button
-- Generate mass-radius curve
-
-### VISUALIZATION
-- Particle count
-- Star brightness
-- Disk brightness
-- Trails on/off
-- Grid on/off
-- Coordinate axes
-
-### STATISTICS
-- Simulation time
-- FPS
-- Particle count
-- Current mass
-- Current radius
-- Energy diagnostics
-
-### SCIENTIFIC SAFETY
-- Explicit disclaimer that this is educational
-- Notes on Newtonian vs full GR limitations
-- TOV EOS-dependence warning
-- Relativistic approximation disclaimer
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 NeutronStarSimulator/
-├── CMakeLists.txt          # Build system with FetchContent deps
-├── README.md              # This file
-├── LICENSE                # MIT license
-├── .gitignore             # Build artifacts
-│
+├── CMakeLists.txt              # Build system (FetchContent deps)
+├── README.md                   # This file
 ├── assets/
-│   ├── shaders/
-│   │   ├── star.vert      # Star vertex shader
-│   │   ├── star.frag      # Star fragment shader
-│   │   ├── particle.vert  # Particle vertex shader
-│   │   ├── particle.frag  # Particle fragment shader
-│   │   ├── disk.vert      # Disk vertex shader
-│   │   └── disk.frag      # Disk fragment shader
-│   └── textures/          # (optional) texture files
-│
+│   └── shaders/                # GLSL 460: star, disk, particle programs
+├── docs/
+│   └── screenshots/            # Captured from the running app
 ├── include/
-│   ├── Physics/           # Pure math, no GL dependency
-│   │   ├── Constants.hpp
-│   │   ├── Gravity.hpp
-│   │   ├── Relativity.hpp
-│   │   ├── Rotation.hpp
-│   │   ├── TOVSolver.hpp
-│   │   └── EquationOfState.hpp
-│   ├── Simulation/        # Uses physics module
-│   │   ├── Particle.hpp
-│   │   ├── ParticleSystem.hpp
-│   │   ├── AccretionDisk.hpp
-│   │   ├── NeutronStar.hpp
-│   │   └── Simulation.hpp
-│   ├── Rendering/         # OpenGL resources
-│   │   ├── Shader.hpp
-│   │   ├── Camera.hpp
-│   │   ├── Mesh.hpp
-│   │   ├── Renderer.hpp
-│   │   └── Framebuffer.hpp
-│   └── UI/                # Dear ImGui interface
-│       └── SimulationUI.hpp
-│
-├── src/
-│   ├── main.cpp           # Entry point, GLFW window, main loop
-│   ├── Physics/           # Implementations
-│   ├── Simulation/        # Implementations
-│   ├── Rendering/         # Implementations
-│   └── UI/                # Implementations
-│
-└── tests/
-    ├── test_gravity.cpp   # Catch2 tests for gravity
-    ├── test_relativity.cpp # Catch2 tests for relativity
-    └── test_tov.cpp       # Catch2 tests for TOV solver
+│   ├── Physics/                # Pure math — no GL dependency
+│   │   ├── Constants.hpp       #   SI constants, world scale
+│   │   ├── Gravity.hpp         #   Newtonian acceleration & potential
+│   │   ├── Relativity.hpp      #   Schwarzschild approximations
+│   │   ├── Rotation.hpp        #   Angular velocity utilities
+│   │   ├── TOVSolver.hpp       #   TOV integrator
+│   │   └── EquationOfState.hpp #   Polytropic EOS
+│   ├── Simulation/             # Particle.hpp, ParticleSystem.hpp,
+│   │   ...                     #   AccretionDisk.hpp, NeutronStar.hpp,
+│   │                           #   Simulation.hpp
+│   ├── Rendering/              # Shader, Camera, Mesh, Framebuffer, Renderer
+│   └── UI/                     # SimulationUI.hpp (Dear ImGui panels)
+├── src/                        # Implementations of the above
+│   ├── glad.c                  # OpenGL loader
+│   └── main.cpp                # Entry point, window, main loop
+└── tests/                      # test_gravity, test_relativity, test_tov
 ```
 
-## Scientific References
+## 🧪 Testing
 
-- Tolman, R. C., Oppenheimer, J. R., & Volkoff, G. M. (1939). "On Massive Neutron Cores". Physical Review.
-- Schwarzschild, K. (1916). "Über das Gravitationsfeld eines Massenpunktes nach der Einsteinschen Theorie". Sitzungsberichte der Königlich Preußischen Akademie der Wissenschaften.
-- Hartle, J. B. (2003). "Gravity: An Introduction to Einstein's General Relativity".
-- Shapiro, S. L., & Teukolsky, S. A. (1983). "Black Holes, White Dwarfs and Neutron Stars".
-- Lattimer, J. M., & Prakash, M. (2001). "The Physics of Neutron Stars".
+```bash
+ctest --test-dir build --output-on-failure
+```
 
-## Future Improvements
+| Suite | Covers |
+|---|---|
+| `test_gravity` | Inverse-square acceleration, potential, escape velocity |
+| `test_relativity` | Schwarzschild radius, time dilation, redshift |
+| `test_tov` | TOV integration sanity, mass–radius behavior |
 
-- GPU-accelerated particle simulation with compute shaders
-- Full general-relativistic particle trajectories
-- Magnetohydrodynamic accretion disk model
-- Neutrino transport and cooling
-- Magnetic field visualization
-- Multi-star systems
-- Realistic equation of state tables from nuclear physics
-- Post-processing effects (bloom, HDR tonemapping)
+Current status: **3/3 passing** ✅
 
-## License
+## 🛠️ Troubleshooting
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+| Symptom | Cause & fix |
+|---|---|
+| **Window opens but the scene is black** | OpenGL 4.6 is required. Update your GPU drivers; note that RDP/VM sessions often expose only GL 3.3. |
+| **`Could not locate shader assets directory`** | Run the executable from the build directory (or reinstall so CMake copies `assets/` there). |
+| **UI panels are collapsed / in odd positions** | Delete the `imgui.ini` file next to wherever you launched the exe — the default layout regenerates on the next start. |
+| **Build can't find the compiler (MinGW)** | Ensure `C:\msys64\ucrt64\bin` is on `PATH` before running CMake. |
+| **Text/panels look tiny on a 4K screen** | The window is sized in physical pixels; resize it to taste — panel layout is saved and restored. |
+
+## 🗺️ Roadmap
+
+Honest status of advertised-but-visual features:
+
+- [x] Star & accretion-disk rendering (fixed winding + shader in this build)
+- [x] Dear ImGui panel suite with persistent layout
+- [ ] **Particle point rendering** — `particle.vert/frag` shaders exist and 5,000–20,000 particles are simulated on the CPU, but they are not uploaded/drawn yet *(next up)*
+- [ ] **Photon-ray visualization** — the UI toggle exists; ray tracing is not wired to the renderer yet
+- [ ] **ImPlot graphs** — TOV mass–radius curves (ImPlot is compiled and linked; UI pending)
+- [ ] Bloom / tonemapping post-process on the HDR buffer
+- [ ] GPU compute-shader particles, relativistic geodesics, magnetic-field visualization
+
+## ⚠️ Scientific Disclaimer & Limitations
+
+**This is an educational simulation, not a validated astrophysics model.**
+
+- Newtonian particle dynamics are approximations, not full general-relativistic trajectories
+- The TOV result depends heavily on the chosen equation of state
+- Relativistic quantities use Schwarzschild static-field approximations only
+- The accretion disk is a simplified viscosity model, not MHD
+- Real neutron stars require nuclear physics, neutrino transport, magnetic fields and more
+
+The simulator intentionally shows that a normal neutron star's radius lies **outside** its Schwarzschild radius — it is not a black hole.
+
+## 📚 References
+
+- Tolman, R. C., Oppenheimer, J. R., & Volkoff, G. M. (1939). *On Massive Neutron Cores*. Physical Review.
+- Schwarzschild, K. (1916). *Über das Gravitationsfeld eines Massenpunktes…* Sitzungsberichte der Kgl. Preuß. Akademie der Wissenschaften.
+- Hartle, J. B. (2003). *Gravity: An Introduction to Einstein's General Relativity*.
+- Shapiro, S. L., & Teukolsky, S. A. (1983). *Black Holes, White Dwarfs, and Neutron Stars*.
+- Lattimer, J. M., & Prakash, M. (2001). *The Physics of Neutron Stars*.
+
+## 📄 License
+
+Released under the MIT License.
+
+
+

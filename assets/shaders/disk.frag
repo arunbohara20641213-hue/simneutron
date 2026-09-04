@@ -26,12 +26,10 @@ void main()
     // Base color with diffuse
     vec3 color = diskColor * diff;
 
-    // Glow effect near edges
-    float glow = smoothstep(diskOuterRadius, diskOuterRadius * 1.1, dist);
-    color += diskColor * 0.2 * glow;
+    // Brightest at the inner edge (hot material close to the star),
+    // fading smoothly toward the outer edge.
+    float innerBoost = smoothstep(diskInnerRadius * 1.25, diskInnerRadius, dist);
+    float outerFade = 1.0 - smoothstep(diskOuterRadius * 0.8, diskOuterRadius, dist);
 
-    // Fade at center
-    float centerFade = smoothstep(0.0, diskInnerRadius * 0.3, dist);
-
-    fragColor = vec4(color * mask * (1.0 - glow) * (1.0 - centerFade), 1.0);
+    fragColor = vec4(color * mask * (0.35 + 0.65 * innerBoost) * outerFade, 1.0);
 }

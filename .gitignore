@@ -6,3 +6,6 @@
 *.exe
 *.ilk
 *.pdb
+
+# ImGui saves window layout to the working directory; don't track stale layouts
+/imgui.ini

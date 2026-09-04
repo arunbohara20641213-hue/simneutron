@@ -37,12 +37,18 @@ void Renderer::init(int width, int height) {
     framebuffer_ = std::make_unique<Framebuffer>();
     framebuffer_->create(width, height);
 
-    // Look for shaders relative to the executable (assets are copied to the
-    // build directory by CMake). Fall back to the source tree for in-place runs.
+    // Look for shaders relative to the working directory (assets are copied
+    // to the build directory by CMake), then relative to the executable's own
+    // directory so the app works regardless of where it is launched from.
     std::vector<std::filesystem::path> assetCandidates;
     assetCandidates.emplace_back("assets/shaders");
     assetCandidates.emplace_back("../assets/shaders");
     assetCandidates.emplace_back("../../assets/shaders");
+
+    const std::filesystem::path exeDir =
+        std::filesystem::current_path();
+    assetCandidates.emplace_back(exeDir / "assets" / "shaders");
+    assetCandidates.emplace_back(exeDir / ".." / "assets" / "shaders");
 
     std::filesystem::path assetDir;
     for (const auto& candidate : assetCandidates) {

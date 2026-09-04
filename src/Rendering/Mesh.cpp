@@ -62,16 +62,19 @@ void Mesh::createSphere(float radius, int segments, int rings) {
         }
     }
 
+    // Winding matters: the renderer enables GL_CULL_FACE (back-face culling,
+    // CCW front faces by default). Triangles below are ordered counter-clockwise
+    // as seen from OUTSIDE the sphere so the surface stays visible.
     for (int ring = 0; ring < rings; ++ring) {
         for (int seg = 0; seg < segments; ++seg) {
             const unsigned int a = ring * (segments + 1) + seg;
             const unsigned int b = a + segments + 1;
             indices_.push_back(a);
-            indices_.push_back(b);
             indices_.push_back(a + 1);
             indices_.push_back(b);
+            indices_.push_back(a + 1);
             indices_.push_back(b + 1);
-            indices_.push_back(a + 1);
+            indices_.push_back(b);
         }
     }
 }
@@ -108,17 +111,20 @@ void Mesh::createDisk(float innerRadius, float outerRadius, int segments) {
         vertices_.push_back(normal.z);
     }
 
+    // Winding matters: the renderer enables GL_CULL_FACE (CCW front faces).
+    // Triangles are ordered counter-clockwise as seen from +Y (above) so the
+    // disk is visible from the default camera, which looks down at the plane.
     for (int i = 0; i < segments; ++i) {
         const unsigned int innerA = i;
         const unsigned int innerB = i + 1;
         const unsigned int outerA = segments + 1 + i;
         const unsigned int outerB = segments + 1 + i + 1;
         indices_.push_back(innerA);
-        indices_.push_back(outerA);
-        indices_.push_back(innerB);
         indices_.push_back(innerB);
         indices_.push_back(outerA);
+        indices_.push_back(innerB);
         indices_.push_back(outerB);
+        indices_.push_back(outerA);
     }
 }
 

@@ -26,6 +26,11 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 
 // Callback for mouse movement (orbit / pan)
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
+    // Don't orbit/pan while the cursor is over an ImGui window/control
+    if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+        return;
+    }
+
     auto* camera = static_cast<nsim::rendering::Camera*>(glfwGetWindowUserPointer(window));
     if (!camera) return;
 
@@ -55,6 +60,11 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 // Callback for scroll (zoom)
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     (void)xoffset;
+    // Don't zoom while the cursor is over an ImGui window/control
+    if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+        return;
+    }
+
     auto* camera = static_cast<nsim::rendering::Camera*>(glfwGetWindowUserPointer(window));
     if (camera) {
         camera->zoom(static_cast<float>(yoffset));

@@ -228,6 +228,6 @@ if(NSIM_BUILD_TESTS)
 endif()
 
 # ---------------------------------------------------------------------------
-# Copy assets to build directory
+# Copy assets to build directory (produces <build>/assets/shaders/...)
 # ---------------------------------------------------------------------------
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
